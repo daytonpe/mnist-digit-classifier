@@ -103,22 +103,38 @@ errorFrequency = 10000
 dataTrain, dataValidate, dataTest = cPickle.load(gzip.open('mnist.pkl.gz', 'rb'))
 
 # training data (x = data 784 x 50000, y = labels 50000 x 1)
+# print(dataTrain[0][0])
 xTrain = dataTrain[0].T
+# print(xTrain.shape)  # (784, 50000)
+# print(len(xTrain[0]))  # 50000
 yTrain = dataTrain[1]
+# print(yTrain.shape)  # (50000,)
 
 # validation data (x = data 784 x 10000, y = labels 10000 x 1)
+# .T --> https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.T.html
 xValidate = dataValidate[0].T
+# print((dataValidate[0]).shape) # (10000, 784)
+# print((dataValidate[0].T).shape) # (784, 10000)
 yValidate = dataValidate[1]
+# xValidate and yValidate are numpy.ndarray
+# print(type(yValidate)) # numpy.ndarray
+# print(type(dataValidate[0]))# numpy.ndarray
 
 # testing data (x = data 784 x 10000, y = labels 10000 x 1)
 xTest = dataTest[0].T
+# print(type(xTest)) # numpy.ndarray
+# print(xTest.shape) # (784, 10000)
 yTest = dataTest[1]
+# print(type(yTest)) # numpy.ndarray
+# print(yTest.shape) # (10000,)
 
 # data dimensions
-(Ktrain,    Ntrain)    = xTrain.shape
+(Ktrain,    Ntrain) = xTrain.shape
+# print(xTrain.shape) # (784, 50000)
 (Kvalidate, Nvalidate) = xValidate.shape
-(Ktest,     Ntest)     = xTest.shape
-
+# print(xValidate.shape) # (784, 10000)
+(Ktest,     Ntest) = xTest.shape
+# print(xTest.shape) # (784, 10000)
 
 ################################################################################
 #
@@ -182,6 +198,7 @@ px = np.zeros(M4)
 
 # gradients
 dedx1 = np.zeros(K1)
+print(dedx1)
 dedx2 = np.zeros(K2)
 dedx3 = np.zeros(K3)
 dedx4 = np.zeros(K4)

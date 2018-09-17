@@ -17,7 +17,7 @@ MNIST Digit Recognition
 
 Patrick Dayton
 
-Due 5 September 2018
+Due 17 September 2018
 """
 
 # import necessary packages
@@ -32,33 +32,46 @@ import torchvision.transforms as transforms
 import torch.nn.functional as F
 import torch.optim as optim
 import matplotlib.pyplot as plt
+import numpy as np
 
 # set variables
 numClasses = 10
 learning_rate = 0.1
 n_epochs = 10
 root = './data'
-trans = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,), (1.0,))])
-batch_size_test = 100
-batch_size_train = 100
+batch_size_test = 1000
+batch_size_train = 64
 momentum = .5
 seed = 1
 log_interval = 100
 
+# set our data transform
+trans = transforms.Compose(
+    [transforms.ToTensor(), 
+     transforms.Normalize((0.5,), (1.0,))])
+
+# Load PyTorch's built in MNIST data set and apply the above tranform.
 train_set = dset.MNIST(root=root, train=True, transform=trans, download=True)
 test_set = dset.MNIST(root=root, train=False, transform=trans, download=True)
 
+# Set up dataloaders which help batch and shuffle data.
 train_loader = torch.utils.data.DataLoader( train_set,
   batch_size=batch_size_train, shuffle=True)
+print(type(train_loader))
 
 test_loader = torch.utils.data.DataLoader( test_set,
   batch_size=batch_size_test, shuffle=True)
 
+# Sanity check of dataset sizes and shape
 examples = enumerate(test_loader)
 batch_idx, (example_data, example_targets) = next(examples)
+print(len(test_loader.dataset)) # 10000
+print(len(train_loader.dataset)) # 60000
+print(next(examples)[1][0].shape) # check shape of data images
 
-print(example_data.shape)
+print('One batch of data has the shape: ', example_data.shape)
 
+# Display a few MNIST images and their true values with matplotlib
 fig = plt.figure()
 for i in range(6):
   plt.subplot(2,3,i+1)
@@ -69,13 +82,14 @@ for i in range(6):
   plt.yticks([])
 fig
 
+# Original Net used in the tutorial
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
-        self.conv1 = nn.Conv2d(1, 10, kernel_size=5)
+        self.conv1 = nn.Conv2d(1, 10, kernel_size=5) # Convolutional Layer
         self.conv2 = nn.Conv2d(10, 20, kernel_size=5)
         self.conv2_drop = nn.Dropout2d()
-        self.fc1 = nn.Linear(320, 50)
+        self.fc1 = nn.Linear(320, 50) # Fully Connected Layer
         self.fc2 = nn.Linear(50, 10)
 
     def forward(self, x):
@@ -87,8 +101,23 @@ class Net(nn.Module):
         x = self.fc2(x)
         return F.log_softmax(x)
 
-network = Net()
-optimizer = optim.SGD(network.parameters(), lr=learning_rate,
+# Defining Net from Homework Parameters
+class HomeworkNet(nn.Module):
+    def __init__(self):
+        super(HomeworkNet, self).__init__()
+        self.fc1 = nn.Linear(784, 512)
+        self.fc2 = nn.Linear(512, 10)
+
+    def forward(self, x):
+        x = x.view(-1, 28*28)  # resizing to be a 1x784 tensor
+        x = F.relu(self.fc1(x))
+        x = F.dropout(x, training=self.training)
+        x = self.fc2(x)
+        return F.log_softmax(x)
+
+network = HomeworkNet()
+optimizer = optim.SGD(network.parameters(), 
+                      lr=learning_rate,
                       momentum=momentum)
 
 train_losses = []
@@ -96,6 +125,7 @@ train_counter = []
 test_losses = []
 test_counter = [i*len(train_loader.dataset) for i in range(n_epochs + 1)]
 
+# Train the network for a given number of epochs
 def train(epoch):
   network.train()
   for batch_idx, (data, target) in enumerate(train_loader):
@@ -111,9 +141,8 @@ def train(epoch):
       train_losses.append(loss.item())
       train_counter.append(
         (batch_idx*64) + ((epoch-1)*len(train_loader.dataset)))
-#       torch.save(network.state_dict(), '/results/model.pth')
-#       torch.save(optimizer.state_dict(), '/results/optimizer.pth')
 
+# test the network
 def test():
   network.eval()
   test_loss = 0
@@ -126,11 +155,15 @@ def test():
       correct += pred.eq(target.data.view_as(pred)).sum()
   test_loss /= len(test_loader.dataset)
   test_losses.append(test_loss)
+  print('In our test set, we should expect around 10% accuracy.')
   print('\nTest set: Avg. loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
     test_loss, correct, len(test_loader.dataset),
     100. * correct / len(test_loader.dataset)))
 
+# Get a baseline by running the network on our test data without training
 test()
+
+# Train the network and run the test again for the number of epochs specified
 for epoch in range(1, n_epochs + 1):
   train(epoch)
   test()
